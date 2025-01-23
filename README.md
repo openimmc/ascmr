@@ -15,9 +15,9 @@ The dependencies are in [`requirements.txt`](requirements.txt). Python=3.8.3 is 
  
 You can download the features of the datasets from:
 
-MIRFlickr, [OneDrive](https://pkueducn-my.sharepoint.com/:f:/g/personal/zszhong_pku_edu_cn/EpLD8yNN2lhIpBgQ7Kl8LKABzM68icvJJahchO7pYNPV1g?e=IYoeqn), [BaiduPan(password: b04z)](https://pan.baidu.com/s/1g1c7Ne7y1BDys6pMh2yhYw)
-NUS-WIDE (top-21 concepts), [BaiduPan(password: tjvo)](https://pan.baidu.com/s/1JEokBLtpQkx8JA1uAhBzxg)
-MS-COCO, [BaiduPan(password: 5uvp)](https://pan.baidu.com/s/1uoV4K1mBwX7N1TVmNEiPgA)
+MIRFlickr, [OneDrive](https://pkueducn-my.sharepoint.com/:f:/g/personal/zszhong_pku_edu_cn/EpLD8yNN2lhIpBgQ7Kl8LKABzM68icvJJahchO7pYNPV1g?e=IYoeqn), [BaiduPan(password: b04z)](https://pan.baidu.com/s/1g1c7Ne7y1BDys6pMh2yhYw) \\
+NUS-WIDE (top-21 concepts), [BaiduPan(password: tjvo)](https://pan.baidu.com/s/1JEokBLtpQkx8JA1uAhBzxg) \\
+MS-COCO, [BaiduPan(password: 5uvp)](https://pan.baidu.com/s/1uoV4K1mBwX7N1TVmNEiPgA) \\
 
 
 ## Implementation
