@@ -112,30 +112,28 @@ class MultiModalSampling(Strategy):
         return idxs_unlabeled[selected], None, None, None, selected, None
 
 
-class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim=4096):
-        super(MLP, self).__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, output_dim)
-        # self.classifier = nn.Linear(code_len, num_class)
-
+class SelfAttention(nn.Module):
+    def __init__(self, d_in, n_head):
+        super(SelfAttention, self).__init__()
+        self.n_head = n_head
+        self.d_in = d_in
+        self.attn = nn.MultiheadAttention(embed_dim=d_in, num_heads=n_head, dropout=0.1)
+    
     def forward(self, x):
-        feat = F.leaky_relu(self.fc1(x), 0.2)
-        feat = F.leaky_relu(self.fc2(feat), 0.2)
-        # predict = self.classifier(feat)
-        return feat
+        # Assuming x has shape (seq_len, batch_size, d_in)
+        attn_output, _ = self.attn(x, x, x)
+        return attn_output
 
 class ImageProbabilisiticEncoder(nn.Module):
-    def __init__(self, n_head, d_in, d_out, d_h, dropout=0.0):
+    def __init__(self, n_head, d_in, d_out, dropout=0.0):
         super(ImageProbabilisiticEncoder, self).__init__()
 
         self.n_head = n_head
-        self.MLP_for_mean = MLP(input_dim=d_in, output_dim=d_in)
-        self.MLP_for_variance = MLP(input_dim=d_in, output_dim=d_in)
-
+        self.self_attention = SelfAttention(d_in=d_in, n_head=n_head)
         self.fc_for_mean = nn.Linear(d_in, d_out)
         self.fc_for_variance = nn.Linear(d_in, d_out)
         self.sigmoid = nn.Sigmoid()
+        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
         self.layer_norm = nn.LayerNorm(d_out)
         self.init_weights()
@@ -147,26 +145,28 @@ class ImageProbabilisiticEncoder(nn.Module):
         nn.init.constant_(self.fc_for_variance.bias, 0)
 
     def forward(self, image, mask=None):
-        residual_mean = self.MLP_for_mean(image)
+        # For the mean (using Sigmoid activation)
+        residual_mean = self.self_attention(image)
         residual_mean = self.dropout(self.sigmoid(self.fc_for_mean(residual_mean)))
-        mean = self.layer_norm(residual_mean + image)  # mean
+        mean = self.layer_norm(residual_mean + image)  # residual connection + LayerNorm
 
-        residual_variance = self.MLP_for_variance(image)
+        # For the variance (using ReLU activation)
+        residual_variance = self.self_attention(image)
         residual_variance = self.fc_for_variance(residual_variance)
-        variance = residual_variance + image
+        variance = self.relu(residual_variance + image)  # residual connection + ReLU activation
+        
         return mean, variance
 
 class TextProbabilisiticEncoder(nn.Module):
-
-    def __init__(self, n_head, d_in, d_out, d_h, d_final, dropout=0.0):
+    def __init__(self, n_head, d_in, d_out, d_final, dropout=0.0):
         super(TextProbabilisiticEncoder, self).__init__()
 
         self.n_head = n_head
-        self.MLP_for_mean = MLP(input_dim=d_in, output_dim=d_in, hidden_dim=d_h)
-        self.MLP_for_variance = MLP(input_dim=d_in, output_dim=d_in, hidden_dim=d_h)
+        self.self_attention = SelfAttention(d_in=d_in, n_head=n_head)
         self.fc_for_mean = nn.Linear(d_in, d_out)
         self.fc_for_variance = nn.Linear(d_in, d_out)
         self.sigmoid = nn.Sigmoid()
+        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
         self.layer_norm = nn.LayerNorm(d_final)
         self.fc1_final = nn.Linear(d_out, d_final)
@@ -180,13 +180,16 @@ class TextProbabilisiticEncoder(nn.Module):
         nn.init.constant_(self.fc_for_variance.bias, 0)
 
     def forward(self, text, mask=None):
-        residual_mean = self.MLP_for_mean(text)
+        # For the mean (using Sigmoid activation)
+        residual_mean = self.self_attention(text)
         residual_mean = self.dropout(self.sigmoid(self.fc_for_mean(residual_mean)))
-        mean = self.layer_norm(self.fc1_final(residual_mean + text))  # mean
+        mean = self.layer_norm(self.fc1_final(residual_mean + text))  # residual connection + LayerNorm
 
-        residual_variance = self.MLP_for_variance(text)
+        # For the variance (using ReLU activation)
+        residual_variance = self.self_attention(text)
         residual_variance = self.fc_for_variance(residual_variance)
-        variance = self.fc2_final(residual_variance + text)
+        variance = self.fc2_final(self.relu(residual_variance + text))  # residual connection + ReLU activation
+        
         return mean, variance
 
 
