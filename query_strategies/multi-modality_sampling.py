@@ -112,24 +112,25 @@ class MultiModalSampling(Strategy):
         return idxs_unlabeled[selected], None, None, None, selected, None
 
 
-class SelfAttention(nn.Module):
-    def __init__(self, d_in, n_head):
-        super(SelfAttention, self).__init__()
-        self.n_head = n_head
-        self.d_in = d_in
-        self.attn = nn.MultiheadAttention(embed_dim=d_in, num_heads=n_head, dropout=0.1)
+class MultiLayerSelfAttention(nn.Module):
+    def __init__(self, d_in, n_head, num_layers=4):
+        super(MultiLayerSelfAttention, self).__init__()
+        self.num_layers = num_layers
+        self.attn_layers = nn.ModuleList([nn.MultiheadAttention(embed_dim=d_in, num_heads=n_head, dropout=0.1) for _ in range(num_layers)])
     
     def forward(self, x):
         # Assuming x has shape (seq_len, batch_size, d_in)
-        attn_output, _ = self.attn(x, x, x)
-        return attn_output
+        for attn_layer in self.attn_layers:
+            # Apply attention to input, output will be fed to the next layer
+            x, _ = attn_layer(x, x, x)
+        return x
 
 class ImageProbabilisiticEncoder(nn.Module):
     def __init__(self, n_head, d_in, d_out, dropout=0.0):
         super(ImageProbabilisiticEncoder, self).__init__()
 
         self.n_head = n_head
-        self.self_attention = SelfAttention(d_in=d_in, n_head=n_head)
+        self.self_attention = MultiLayerSelfAttention(d_in=d_in, n_head=n_head, num_layers=4)
         self.fc_for_mean = nn.Linear(d_in, d_out)
         self.fc_for_variance = nn.Linear(d_in, d_out)
         self.sigmoid = nn.Sigmoid()
@@ -162,7 +163,7 @@ class TextProbabilisiticEncoder(nn.Module):
         super(TextProbabilisiticEncoder, self).__init__()
 
         self.n_head = n_head
-        self.self_attention = SelfAttention(d_in=d_in, n_head=n_head)
+        self.self_attention = MultiLayerSelfAttention(d_in=d_in, n_head=n_head, num_layers=4)
         self.fc_for_mean = nn.Linear(d_in, d_out)
         self.fc_for_variance = nn.Linear(d_in, d_out)
         self.sigmoid = nn.Sigmoid()
@@ -191,6 +192,7 @@ class TextProbabilisiticEncoder(nn.Module):
         variance = self.fc2_final(self.relu(residual_variance + text))  # residual connection + ReLU activation
         
         return mean, variance
+
 
 
 class CrossModalProbabilisticEncoder(nn.Module):
