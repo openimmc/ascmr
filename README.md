@@ -8,7 +8,7 @@ PyTorch implementation of ASCMR.
 The code includes the implementations of all the baselines presented in the paper. Parts of the code are borrowed from https://github.com/JordanAsh/badge.
 
 ## Setup
-The dependencies are in [`requirements.txt`](requirements.txt). Python=3.8.3 is recommended for the installation of the environment.
+The dependencies are in [`requirements.txt`](requirements.txt). Python 3.10 is recommended for the secured dependency set.
 
 
 ## Datasets
